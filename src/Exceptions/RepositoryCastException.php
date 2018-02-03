@@ -5,12 +5,12 @@ namespace Phpno1\Repository\Exceptions;
 use Exception;
 
 /**
- * 模型实例没有找到
- * NoEntityDefined class
+ * 仓储类型转换异常
+ * RepositoryCastException class
  */
-class NoEntityDefinedException extends Exception
+class RepositoryCastException extends Exception
 {
-    const ErrorCode = 3001;
+    const ErrorCode = 3004;
 
     public function __construct(string $message = null)
     {

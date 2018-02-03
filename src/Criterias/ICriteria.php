@@ -1,10 +1,9 @@
 <?php
 
-namespace Phpno1\Repositories\Criterias;
+namespace Phpno1\Repository\Criterias;
 
 /**
- * 公共操作接口
- * 
+ * 公共操作抽象层
  * ICriteria interface
  */
 interface ICriteria

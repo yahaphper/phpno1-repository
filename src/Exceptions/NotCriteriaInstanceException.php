@@ -6,11 +6,11 @@ use Exception;
 
 /**
  * 模型实例没有找到
- * NoEntityDefined class
+ * NotCriteriaInstanceException class
  */
-class NoEntityDefinedException extends Exception
+class NotCriteriaInstanceException extends Exception
 {
-    const ErrorCode = 3001;
+    const ErrorCode = 3002;
 
     public function __construct(string $message = null)
     {

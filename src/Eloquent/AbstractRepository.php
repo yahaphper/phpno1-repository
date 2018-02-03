@@ -1,24 +1,15 @@
 <?php
 
-namespace Phpno1\Repositories\Eloquent;
+namespace Phpno1\Repository\Eloquent;
 
-
-use Phpno1\Repositories\Criterias\ICriteria;
-use Phpno1\Repositories\Contracts\IRepository;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-
-use Illuminate\Database\Eloquent\{
-    Builder, Model, ModelNotFoundException
-};
-
-use Phpno1\Repositories\Exceptions\{
-    RepositoryCastFailException,
-    NoEntityDefinedException,
-    IllegalCriteriaInstanceException,
-    NotEnoughWhereParamsException
-};
-
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Phpno1\Repository\Criterias\ICriteria;
+use Phpno1\Repository\Contracts\IRepository;
+use Phpno1\Repository\Exceptions\RepositoryCastException;
+use Phpno1\Repository\Exceptions\NoEntityDefinedException;
+use Phpno1\Repository\Exceptions\NotCriteriaInstanceException;
+use Phpno1\Repository\Exceptions\NotEnoughWhereParamsException;
 
 /**
  * 仓储基本操作抽象
@@ -29,7 +20,7 @@ abstract class AbstractRepository implements IRepository
     /**
      * 当前模型对象
      *
-     * @var
+     * @var [type]
      */
     protected $entity;
 
@@ -39,11 +30,6 @@ abstract class AbstractRepository implements IRepository
         $this->boot();
     }
 
-    /**
-     * 初始化加载器，子类重写后使用
-     * 
-     * @return void
-     */
     public function boot()
     {
     }
@@ -51,7 +37,7 @@ abstract class AbstractRepository implements IRepository
     /**
      * 获取模型的所有数据
      *
-     * @return Collection
+     * @return void
      */
     public function all()
     {
@@ -59,9 +45,9 @@ abstract class AbstractRepository implements IRepository
     }
 
     /**
-     * 获取第一行数据
+     * 获取第一列数据
      *
-     * @return Model
+     * @return void
      */
     public function first()
     {
@@ -71,7 +57,7 @@ abstract class AbstractRepository implements IRepository
     /**
      * 统计记录总数
      *
-     * @return int
+     * @return void
      */
     public function count()
     {
@@ -82,10 +68,15 @@ abstract class AbstractRepository implements IRepository
      * 根据where条件获取记录数
      *
      * @param [type] ...$condition
-     * @return integer
+     * @return void
      */
     public function findWhereCount(...$condition)
     {
+        throw_if(
+            count($condition) < 2,
+            new NotEnoughWhereParamsException()
+        );
+
         return $this->setWhere($condition)->count();
     }
 
@@ -93,7 +84,7 @@ abstract class AbstractRepository implements IRepository
      * 根据id获取一条数据
      *
      * @param integer $id
-     * @return Builder
+     * @return void
      */
     public function find(int $id)
     {
@@ -109,14 +100,18 @@ abstract class AbstractRepository implements IRepository
 
     /**
      * 根据条件查询获取多行结果集
-     *
      * findWhere('id', '>', 29) 或者 findWhere(['id', '>', 29],...)
      * 
-     * @param array ...$condition
-     * @return Collection
+     * @param [type] ...$condition
+     * @return void
      */
     public function findWhere(...$condition)
     {
+        throw_if(
+            count($condition) < 2,
+            new NotEnoughWhereParamsException()
+        );
+
         return $this->setWhere($condition)->all();
     }
 
@@ -126,26 +121,31 @@ abstract class AbstractRepository implements IRepository
      * 
      * @param [type] $column
      * @param [type] $value
-     * @return Collection
+     * @return void
      */
     public function findWhereFirst(...$condition)
     {
-        $res = $this->setWhere($condition)->first();
+        throw_if(
+            count($condition) < 2,
+            new NotEnoughWhereParamsException()
+        );
 
-        if (!$res) {
+        $model = $this->setWhere($condition)->first();
+
+        if (!$model) {
             throw (new ModelNotFoundException)->setModel(
                 get_class($this->entity->getModel())
             );
         }
 
-        return $res;
+        return $model;
     }
 
     /**
      * 分页显示数据
      *
      * @param integer $perPage
-     * @return LengthAwarePaginator
+     * @return void
      */
     public function paginate(int $perPage = 10)
     {
@@ -158,7 +158,7 @@ abstract class AbstractRepository implements IRepository
      * 添加数据
      *
      * @param array $properties
-     * @return Model
+     * @return void
      */
     public function create(array $properties)
     {
@@ -170,7 +170,7 @@ abstract class AbstractRepository implements IRepository
      *
      * @param integer $id
      * @param array $properties
-     * @return boolean
+     * @return void
      */
     public function update(int $id, array $properties)
     {
@@ -181,7 +181,7 @@ abstract class AbstractRepository implements IRepository
      * 删除单条数据
      *
      * @param integer $id
-     * @return boolean
+     * @return void
      */
     public function delete(int $id)
     {
@@ -192,7 +192,7 @@ abstract class AbstractRepository implements IRepository
      * 填充标准条件对象
      *
      * @param [type] ...$criteria
-     * @return IRepository
+     * @return $this
      */
     public function withCriteria(...$criteria)
     {
@@ -201,7 +201,7 @@ abstract class AbstractRepository implements IRepository
         foreach ($criteria as $item) {
             throw_if(
                 !$item instanceof ICriteria,
-                new IllegalCriteriaInstanceException()
+                new NotCriteriaInstanceException()
             );
             $this->entity = $item->apply($this->entity);
         }
@@ -212,13 +212,13 @@ abstract class AbstractRepository implements IRepository
     /**
      * 把仓储对象转换为Entity对象
      *
-     * @return Builder
+     * @return void
      */
     public function toEntity()
     {
         throw_if(
             !$this instanceof IRepository,
-            new RepositoryCastFailException()
+            new RepositoryCastException()
         );
 
         return $this->entity;
@@ -227,9 +227,7 @@ abstract class AbstractRepository implements IRepository
     /**
      * 把entity对象转换为仓储对象。
      *
-     * @param Builder $entity
-     *
-     * @return IRepository
+     * @return void
      */
     public function toRepository(Builder $entity)
     {
@@ -242,7 +240,7 @@ abstract class AbstractRepository implements IRepository
      * where条件的组装
      * 
      * @param array $condition
-     * @return IRepository
+     * @return void
      */
     protected function setWhere(array $condition)
     {
@@ -262,7 +260,7 @@ abstract class AbstractRepository implements IRepository
      * 根据参数的类型来叠加where
      *
      * @param array $condition
-     * @return Builder
+     * @return
      */
     protected function setConditions(array $condition)
     {
@@ -283,7 +281,7 @@ abstract class AbstractRepository implements IRepository
     /**
      * 获取当前的model对象
      *
-     * @return Builder | Model
+     * @return
      */
     protected function resolveEntity()
     {
